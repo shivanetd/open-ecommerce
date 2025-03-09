@@ -14,14 +14,18 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+
 def admin_session_required(f):
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'admin_logged_in' not in session:
             flash('Please log in first.', 'warning')
             return redirect(url_for('admin.login'))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 @admin_bp.route('/')
 @admin_session_required
@@ -39,12 +43,14 @@ def dashboard():
         logger.error(f"Error loading dashboard: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         flash('Error loading dashboard statistics', 'danger')
-        return render_template('admin/dashboard.html', stats={
-            'total_users': 0,
-            'total_products': 0,
-            'total_orders': 0,
-            'pending_orders': 0
-        })
+        return render_template('admin/dashboard.html',
+                               stats={
+                                   'total_users': 0,
+                                   'total_products': 0,
+                                   'total_orders': 0,
+                                   'pending_orders': 0
+                               })
+
 
 @admin_bp.route('/users')
 @admin_session_required
@@ -58,7 +64,9 @@ def users():
         # Log sample user data for debugging
         if users_list:
             sample_user = users_list[0]
-            logger.debug(f"Sample user data - ID: {sample_user.id}, Username: {sample_user.username}")
+            logger.debug(
+                f"Sample user data - ID: {sample_user.id}, Username: {sample_user.username}"
+            )
 
         return render_template('admin/users.html', users=users_list)
     except Exception as e:
@@ -67,18 +75,18 @@ def users():
         flash('Error loading users list', 'danger')
         return redirect(url_for('admin.dashboard'))
 
+
 @admin_bp.route('/users/create', methods=['GET', 'POST'])
 @admin_session_required
 def create_user():
     """Create new user"""
     if request.method == 'POST':
         try:
-            user = User(
-                username=request.form['username'],
-                email=request.form['email'],
-                password=generate_password_hash(request.form['password']),
-                is_admin=request.form.get('is_admin', False) == 'on'
-            )
+            user = User(username=request.form['username'],
+                        email=request.form['email'],
+                        password=generate_password_hash(
+                            request.form['password']),
+                        is_admin=request.form.get('is_admin', False) == 'on')
             user.save()
             flash('User created successfully', 'success')
             return redirect(url_for('admin.users'))
@@ -87,6 +95,7 @@ def create_user():
             logger.error(f"Traceback: {traceback.format_exc()}")
             flash(f'Error creating user: {str(e)}', 'danger')
     return render_template('admin/user_form.html')
+
 
 @admin_bp.route('/products')
 @admin_session_required
@@ -100,7 +109,9 @@ def products():
         # Log sample product data for debugging
         if products_list:
             sample_product = products_list[0]
-            logger.debug(f"Sample product data - ID: {sample_product.id}, Name: {sample_product.name}")
+            logger.debug(
+                f"Sample product data - ID: {sample_product.id}, Name: {sample_product.name}"
+            )
 
         return render_template('admin/products.html', products=products_list)
     except Exception as e:
@@ -108,6 +119,7 @@ def products():
         logger.error(f"Traceback: {traceback.format_exc()}")
         flash('Error loading products list', 'danger')
         return redirect(url_for('admin.dashboard'))
+
 
 @admin_bp.route('/products/create', methods=['GET', 'POST'])
 @admin_session_required
@@ -119,16 +131,15 @@ def create_product():
             custom_fields = {}
             for key, value in request.form.items():
                 if key.startswith('custom_fields[') and key.endswith(']'):
-                    field_name = key[13:-1]  # Extract field name from custom_fields[name]
+                    field_name = key[
+                        13:-1]  # Extract field name from custom_fields[name]
                     custom_fields[field_name] = value
 
-            product = Product(
-                name=request.form['name'],
-                description=request.form['description'],
-                price=float(request.form['price']),
-                stock=int(request.form['stock']),
-                custom_fields=custom_fields
-            )
+            product = Product(name=request.form['name'],
+                              description=request.form['description'],
+                              price=float(request.form['price']),
+                              stock=int(request.form['stock']),
+                              custom_fields=custom_fields)
             product.save()
             flash('Product created successfully', 'success')
             return redirect(url_for('admin.products'))
@@ -140,12 +151,14 @@ def create_product():
     # Get dynamic fields for the template
     try:
         dynamic_fields = list(DynamicField.objects(entity_type='product'))
-        return render_template('admin/product_form.html', dynamic_fields=dynamic_fields)
+        return render_template('admin/product_form.html',
+                               dynamic_fields=dynamic_fields)
     except Exception as e:
         logger.error(f"Error loading dynamic fields: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         flash('Error loading form', 'danger')
         return redirect(url_for('admin.products'))
+
 
 @admin_bp.route('/orders')
 @admin_session_required
@@ -153,6 +166,7 @@ def orders():
     """Order management page"""
     orders_list = Order.objects.all().order_by('-created_at')
     return render_template('admin/orders.html', orders=orders_list)
+
 
 @admin_bp.route('/orders/<order_id>/status', methods=['POST'])
 @admin_session_required
@@ -169,6 +183,7 @@ def update_order_status(order_id):
         flash(f'Error updating order status: {str(e)}', 'danger')
     return redirect(url_for('admin.orders'))
 
+
 @admin_bp.route('/dynamic-fields')
 @admin_session_required
 def dynamic_fields():
@@ -176,18 +191,17 @@ def dynamic_fields():
     fields = DynamicField.objects.all()
     return render_template('admin/dynamic_fields.html', dynamic_fields=fields)
 
+
 @admin_bp.route('/dynamic-fields/add', methods=['POST'])
 @admin_session_required
 def add_dynamic_field():
     """Add new dynamic field"""
     try:
-        field = DynamicField(
-            name=request.form['name'],
-            field_type=request.form['field_type'],
-            entity_type=request.form['entity_type'],
-            description=request.form.get('description', ''),
-            required=request.form.get('required') == 'on'
-        )
+        field = DynamicField(name=request.form['name'],
+                             field_type=request.form['field_type'],
+                             entity_type=request.form['entity_type'],
+                             description=request.form.get('description', ''),
+                             required=request.form.get('required') == 'on')
         field.save()
         flash('Field added successfully', 'success')
     except Exception as e:
@@ -195,6 +209,7 @@ def add_dynamic_field():
         logger.error(f"Traceback: {traceback.format_exc()}")
         flash(f'Error adding field: {str(e)}', 'danger')
     return redirect(url_for('admin.dynamic_fields'))
+
 
 @admin_bp.route('/dynamic-fields/<field_id>/delete', methods=['POST'])
 @admin_session_required
@@ -209,8 +224,16 @@ def delete_dynamic_field(field_id):
 
         # Check if field is in use
         field_name = field.name
-        products_using_field = Product.objects(__raw__={'custom_fields.' + field_name: {'$exists': True}}).count()
-        carts_using_field = Cart.objects(__raw__={'custom_fields.' + field_name: {'$exists': True}}).count()
+        products_using_field = Product.objects(__raw__={
+            'custom_fields.' + field_name: {
+                '$exists': True
+            }
+        }).count()
+        carts_using_field = Cart.objects(__raw__={
+            'custom_fields.' + field_name: {
+                '$exists': True
+            }
+        }).count()
 
         if products_using_field > 0 or carts_using_field > 0:
             flash('Cannot delete field as it is in use', 'danger')
@@ -226,6 +249,7 @@ def delete_dynamic_field(field_id):
         flash(f'Error deleting field: {str(e)}', 'danger')
 
     return redirect(url_for('admin.dynamic_fields'))
+
 
 @admin_bp.route('/users/<user_id>/delete', methods=['POST'])
 @admin_session_required
@@ -265,6 +289,7 @@ def delete_user(user_id):
 
     return redirect(url_for('admin.users'))
 
+
 @admin_bp.route('/products/<product_id>/delete', methods=['POST'])
 @admin_session_required
 def delete_product(product_id):
@@ -297,6 +322,7 @@ def delete_product(product_id):
 
     return redirect(url_for('admin.products'))
 
+
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -305,7 +331,8 @@ def login():
 
         try:
             user = User.objects(username=username).first()
-            if user and user.is_admin and check_password_hash(user.password, password):
+            if user and user.is_admin and check_password_hash(
+                    user.password, password):
                 session['admin_logged_in'] = True
                 session['admin_username'] = user.username
                 flash('Successfully logged in!', 'success')
@@ -319,12 +346,14 @@ def login():
 
     return render_template('admin/login.html')
 
+
 @admin_bp.route('/logout')
 def logout():
     session.pop('admin_logged_in', None)
     session.pop('admin_username', None)
     flash('Successfully logged out.', 'success')
     return redirect(url_for('admin.login'))
+
 
 @admin_bp.route('/products/<product_id>/edit', methods=['GET', 'POST'])
 @admin_session_required
@@ -339,7 +368,9 @@ def edit_product(product_id):
                 custom_fields = {}
                 for key, value in request.form.items():
                     if key.startswith('custom_fields[') and key.endswith(']'):
-                        field_name = key[13:-1]  # Extract field name from custom_fields[name]
+                        field_name = key[
+                            14:
+                            -1]  # Extract field name from custom_fields[name]
                         custom_fields[field_name] = value
 
                 # Update product fields
@@ -359,15 +390,16 @@ def edit_product(product_id):
 
         # Get dynamic fields for the template
         dynamic_fields = list(DynamicField.objects(entity_type='product'))
-        return render_template('admin/product_form.html', 
-                             product=product,
-                             dynamic_fields=dynamic_fields,
-                             edit_mode=True)
+        return render_template('admin/product_form.html',
+                               product=product,
+                               dynamic_fields=dynamic_fields,
+                               edit_mode=True)
     except Exception as e:
         logger.error(f"Error loading product: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         flash('Error loading product', 'danger')
         return redirect(url_for('admin.products'))
+
 
 @admin_bp.route('/users/<user_id>/edit', methods=['GET', 'POST'])
 @admin_session_required
@@ -383,7 +415,8 @@ def edit_user(user_id):
 
                 # Only update password if provided
                 if request.form.get('password'):
-                    user.password = generate_password_hash(request.form['password'])
+                    user.password = generate_password_hash(
+                        request.form['password'])
 
                 user.is_admin = request.form.get('is_admin', False) == 'on'
                 user.save()
@@ -395,9 +428,38 @@ def edit_user(user_id):
                 logger.error(f"Traceback: {traceback.format_exc()}")
                 flash(f'Error updating user: {str(e)}', 'danger')
 
-        return render_template('admin/user_form.html', user=user, edit_mode=True)
+        return render_template('admin/user_form.html',
+                               user=user,
+                               edit_mode=True)
     except Exception as e:
         logger.error(f"Error loading user: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         flash('Error loading user', 'danger')
         return redirect(url_for('admin.users'))
+
+@admin_bp.route('/products/<product_id>/copy', methods=['POST'])
+@admin_session_required
+def copy_product(product_id):
+    """Create a copy of an existing product"""
+    try:
+        logger.debug(f"Attempting to copy product with ID: {product_id}")
+        original_product = Product.objects.get(id=ObjectId(product_id))
+
+        # Create new product with copied details
+        new_product = Product(
+            name=f"Copy of {original_product.name}",
+            description=original_product.description,
+            price=original_product.price,
+            stock=original_product.stock,
+            custom_fields=original_product.custom_fields.copy()
+        )
+        new_product.save()
+
+        logger.info(f"Successfully copied product {product_id} to new product {new_product.id}")
+        flash('Product copied successfully', 'success')
+    except Exception as e:
+        logger.error(f"Error copying product: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash(f'Error copying product: {str(e)}', 'danger')
+
+    return redirect(url_for('admin.products'))
