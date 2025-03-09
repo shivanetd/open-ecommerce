@@ -1,6 +1,6 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Create User{% endblock %}
+{% block title %}{% if edit_mode %}Edit{% else %}Create{% endif %} User{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -8,26 +8,26 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Create New User</h2>
+                    <h2 class="card-title text-center mb-4">{% if edit_mode %}Edit{% else %}Create New{% endif %} User</h2>
                     <form method="POST">
                         <div class="mb-3">
                             <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" name="username" required>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ user.username if user else '' }}" required>
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email if user else '' }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <label for="password" class="form-label">{% if edit_mode %}New Password (leave blank to keep current){% else %}Password{% endif %}</label>
+                            <input type="password" class="form-control" id="password" name="password" {% if not edit_mode %}required{% endif %}>
                         </div>
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin">
+                            <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {% if user and user.is_admin %}checked{% endif %}>
                             <label class="form-check-label" for="is_admin">Admin User</label>
                         </div>
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Create User</button>
+                            <button type="submit" class="btn btn-primary">{% if edit_mode %}Update{% else %}Create{% endif %} User</button>
                             <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>

@@ -1,6 +1,6 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Create Product{% endblock %}
+{% block title %}{% if edit_mode %}Edit{% else %}Create{% endif %} Product{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -8,23 +8,23 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Create New Product</h2>
+                    <h2 class="card-title text-center mb-4">{% if edit_mode %}Edit{% else %}Create New{% endif %} Product</h2>
                     <form method="POST">
                         <div class="mb-3">
                             <label for="name" class="form-label">Product Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ product.name if product else '' }}" required>
                         </div>
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                            <textarea class="form-control" id="description" name="description" rows="3" required>{{ product.description if product else '' }}</textarea>
                         </div>
                         <div class="mb-3">
                             <label for="price" class="form-label">Price</label>
-                            <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
+                            <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{{ product.price if product else '' }}" required>
                         </div>
                         <div class="mb-3">
                             <label for="stock" class="form-label">Stock</label>
-                            <input type="number" class="form-control" id="stock" name="stock" min="0" required>
+                            <input type="number" class="form-control" id="stock" name="stock" min="0" value="{{ product.stock if product else '' }}" required>
                         </div>
 
                         {# Dynamic Fields Section #}
@@ -33,16 +33,27 @@
                             <div class="mb-3">
                                 <label for="{{ field.name }}" class="form-label">{{ field.name }}</label>
                                 {% if field.field_type == 'string' %}
-                                    <input type="text" class="form-control" id="{{ field.name }}" name="custom_fields[{{ field.name }}]" {% if field.required %}required{% endif %}>
+                                    <input type="text" class="form-control" id="{{ field.name }}" 
+                                           name="custom_fields[{{ field.name }}]" 
+                                           value="{{ product.custom_fields[field.name] if product and product.custom_fields[field.name] else '' }}"
+                                           {% if field.required %}required{% endif %}>
                                 {% elif field.field_type == 'number' %}
-                                    <input type="number" class="form-control" id="{{ field.name }}" name="custom_fields[{{ field.name }}]" {% if field.required %}required{% endif %}>
+                                    <input type="number" class="form-control" id="{{ field.name }}" 
+                                           name="custom_fields[{{ field.name }}]" 
+                                           value="{{ product.custom_fields[field.name] if product and product.custom_fields[field.name] else '' }}"
+                                           {% if field.required %}required{% endif %}>
                                 {% elif field.field_type == 'boolean' %}
-                                    <select class="form-select" id="{{ field.name }}" name="custom_fields[{{ field.name }}]" {% if field.required %}required{% endif %}>
-                                        <option value="true">Yes</option>
-                                        <option value="false">No</option>
+                                    <select class="form-select" id="{{ field.name }}" 
+                                            name="custom_fields[{{ field.name }}]" 
+                                            {% if field.required %}required{% endif %}>
+                                        <option value="true" {% if product and product.custom_fields[field.name] == "true" %}selected{% endif %}>Yes</option>
+                                        <option value="false" {% if product and product.custom_fields[field.name] == "false" %}selected{% endif %}>No</option>
                                     </select>
                                 {% elif field.field_type == 'date' %}
-                                    <input type="date" class="form-control" id="{{ field.name }}" name="custom_fields[{{ field.name }}]" {% if field.required %}required{% endif %}>
+                                    <input type="date" class="form-control" id="{{ field.name }}" 
+                                           name="custom_fields[{{ field.name }}]" 
+                                           value="{{ product.custom_fields[field.name] if product and product.custom_fields[field.name] else '' }}"
+                                           {% if field.required %}required{% endif %}>
                                 {% endif %}
                                 {% if field.description %}
                                     <div class="form-text">{{ field.description }}</div>
@@ -52,7 +63,7 @@
                         {% endfor %}
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Create Product</button>
+                            <button type="submit" class="btn btn-primary">{% if edit_mode %}Update{% else %}Create{% endif %} Product</button>
                             <a href="{{ url_for('admin.products') }}" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>

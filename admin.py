@@ -325,3 +325,79 @@ def logout():
     session.pop('admin_username', None)
     flash('Successfully logged out.', 'success')
     return redirect(url_for('admin.login'))
+
+@admin_bp.route('/products/<product_id>/edit', methods=['GET', 'POST'])
+@admin_session_required
+def edit_product(product_id):
+    """Edit existing product"""
+    try:
+        product = Product.objects.get(id=ObjectId(product_id))
+
+        if request.method == 'POST':
+            try:
+                # Process custom fields
+                custom_fields = {}
+                for key, value in request.form.items():
+                    if key.startswith('custom_fields[') and key.endswith(']'):
+                        field_name = key[13:-1]  # Extract field name from custom_fields[name]
+                        custom_fields[field_name] = value
+
+                # Update product fields
+                product.name = request.form['name']
+                product.description = request.form['description']
+                product.price = float(request.form['price'])
+                product.stock = int(request.form['stock'])
+                product.custom_fields = custom_fields
+
+                product.save()
+                flash('Product updated successfully', 'success')
+                return redirect(url_for('admin.products'))
+            except Exception as e:
+                logger.error(f"Error updating product: {str(e)}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                flash(f'Error updating product: {str(e)}', 'danger')
+
+        # Get dynamic fields for the template
+        dynamic_fields = list(DynamicField.objects(entity_type='product'))
+        return render_template('admin/product_form.html', 
+                             product=product,
+                             dynamic_fields=dynamic_fields,
+                             edit_mode=True)
+    except Exception as e:
+        logger.error(f"Error loading product: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash('Error loading product', 'danger')
+        return redirect(url_for('admin.products'))
+
+@admin_bp.route('/users/<user_id>/edit', methods=['GET', 'POST'])
+@admin_session_required
+def edit_user(user_id):
+    """Edit existing user"""
+    try:
+        user = User.objects.get(id=ObjectId(user_id))
+
+        if request.method == 'POST':
+            try:
+                user.username = request.form['username']
+                user.email = request.form['email']
+
+                # Only update password if provided
+                if request.form.get('password'):
+                    user.password = generate_password_hash(request.form['password'])
+
+                user.is_admin = request.form.get('is_admin', False) == 'on'
+                user.save()
+
+                flash('User updated successfully', 'success')
+                return redirect(url_for('admin.users'))
+            except Exception as e:
+                logger.error(f"Error updating user: {str(e)}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                flash(f'Error updating user: {str(e)}', 'danger')
+
+        return render_template('admin/user_form.html', user=user, edit_mode=True)
+    except Exception as e:
+        logger.error(f"Error loading user: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash('Error loading user', 'danger')
+        return redirect(url_for('admin.users'))
