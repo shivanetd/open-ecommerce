@@ -23,6 +23,8 @@ A comprehensive Flask-based e-commerce platform with robust admin management cap
 
 ## Installation
 
+### Option 1: Local Installation
+
 1. Clone the repository
 ```bash
 git clone [your-repository-url]
@@ -43,6 +45,23 @@ export FLASK_SECRET_KEY="your_flask_secret"
 4. Run the application
 ```bash
 python main.py
+```
+
+### Option 2: Using Docker
+
+Pull and run the container from GitHub Container Registry:
+
+```bash
+# Pull the image
+docker pull ghcr.io/[your-username]/[repository-name]:latest
+
+# Run the container
+docker run -d \
+  -p 5000:5000 \
+  -e MONGODB_URI="your_mongodb_uri" \
+  -e JWT_SECRET_KEY="your_jwt_secret" \
+  -e FLASK_SECRET_KEY="your_flask_secret" \
+  ghcr.io/[your-username]/[repository-name]:latest
 ```
 
 ## API Documentation
