@@ -21,6 +21,7 @@ class Product(Document):
     description = StringField(required=True)
     price = FloatField(required=True, min_value=0)
     stock = IntField(required=True, min_value=0)
+    sku = StringField(required=True, unique=True)  # Add SKU field
     custom_fields = DictField(default={})
     meta = {'collection': 'products'}
 

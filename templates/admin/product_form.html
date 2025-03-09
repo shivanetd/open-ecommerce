@@ -11,6 +11,10 @@
                     <h2 class="card-title text-center mb-4">{% if edit_mode %}Edit{% else %}Create New{% endif %} Product</h2>
                     <form method="POST">
                         <div class="mb-3">
+                            <label for="sku" class="form-label">SKU</label>
+                            <input type="text" class="form-control" id="sku" name="sku" value="{{ product.sku if product else '' }}" required>
+                        </div>
+                        <div class="mb-3">
                             <label for="name" class="form-label">Product Name</label>
                             <input type="text" class="form-control" id="name" name="name" value="{{ product.name if product else '' }}" required>
                         </div>

@@ -131,15 +131,17 @@ def create_product():
             custom_fields = {}
             for key, value in request.form.items():
                 if key.startswith('custom_fields[') and key.endswith(']'):
-                    field_name = key[
-                        13:-1]  # Extract field name from custom_fields[name]
+                    field_name = key[13:-1]  # Extract field name from custom_fields[name]
                     custom_fields[field_name] = value
 
-            product = Product(name=request.form['name'],
-                              description=request.form['description'],
-                              price=float(request.form['price']),
-                              stock=int(request.form['stock']),
-                              custom_fields=custom_fields)
+            product = Product(
+                sku=request.form['sku'],
+                name=request.form['name'],
+                description=request.form['description'],
+                price=float(request.form['price']),
+                stock=int(request.form['stock']),
+                custom_fields=custom_fields
+            )
             product.save()
             flash('Product created successfully', 'success')
             return redirect(url_for('admin.products'))
@@ -151,8 +153,7 @@ def create_product():
     # Get dynamic fields for the template
     try:
         dynamic_fields = list(DynamicField.objects(entity_type='product'))
-        return render_template('admin/product_form.html',
-                               dynamic_fields=dynamic_fields)
+        return render_template('admin/product_form.html', dynamic_fields=dynamic_fields)
     except Exception as e:
         logger.error(f"Error loading dynamic fields: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
@@ -368,12 +369,11 @@ def edit_product(product_id):
                 custom_fields = {}
                 for key, value in request.form.items():
                     if key.startswith('custom_fields[') and key.endswith(']'):
-                        field_name = key[
-                            14:
-                            -1]  # Extract field name from custom_fields[name]
+                        field_name = key[13:-1]  # Extract field name from custom_fields[name]
                         custom_fields[field_name] = value
 
                 # Update product fields
+                product.sku = request.form['sku']
                 product.name = request.form['name']
                 product.description = request.form['description']
                 product.price = float(request.form['price'])
@@ -391,9 +391,9 @@ def edit_product(product_id):
         # Get dynamic fields for the template
         dynamic_fields = list(DynamicField.objects(entity_type='product'))
         return render_template('admin/product_form.html',
-                               product=product,
-                               dynamic_fields=dynamic_fields,
-                               edit_mode=True)
+                                 product=product,
+                                 dynamic_fields=dynamic_fields,
+                                 edit_mode=True)
     except Exception as e:
         logger.error(f"Error loading product: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
@@ -447,6 +447,7 @@ def copy_product(product_id):
 
         # Create new product with copied details
         new_product = Product(
+            sku=f"{original_product.sku}-COPY",  # Append -COPY to make SKU unique
             name=f"Copy of {original_product.name}",
             description=original_product.description,
             price=original_product.price,
