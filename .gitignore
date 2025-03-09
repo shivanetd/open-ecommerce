@@ -36,6 +36,9 @@ ENV/
 .breakpoints
 replit.nix
 poetry.lock
+.upm/
+.cache/
+.pythonlibs/
 
 # Environment variables
 .env
