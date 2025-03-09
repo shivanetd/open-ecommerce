@@ -4,8 +4,9 @@ from models import User, Product, Order, DynamicField, Cart
 from auth import admin_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
-from bson import ObjectId
+from bson.objectid import ObjectId
 import logging
+import traceback
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -22,49 +23,49 @@ def admin_session_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@admin_bp.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        user = User.objects(username=username).first()
-
-        if user and user.is_admin and check_password_hash(user.password, password):
-            session['admin_logged_in'] = True
-            session['admin_username'] = user.username
-            flash('Successfully logged in!', 'success')
-            return redirect(url_for('admin.dashboard'))
-        else:
-            flash('Invalid credentials or not an admin user.', 'danger')
-
-    return render_template('admin/login.html')
-
-@admin_bp.route('/logout')
-def logout():
-    session.pop('admin_logged_in', None)
-    session.pop('admin_username', None)
-    flash('Successfully logged out.', 'success')
-    return redirect(url_for('admin.login'))
-
 @admin_bp.route('/')
 @admin_session_required
 def dashboard():
     """Admin dashboard with overview statistics"""
-    stats = {
-        'total_users': User.objects.count(),
-        'total_products': Product.objects.count(),
-        'total_orders': Order.objects.count(),
-        'pending_orders': Order.objects(status='pending').count()
-    }
-    return render_template('admin/dashboard.html', stats=stats)
+    try:
+        stats = {
+            'total_users': User.objects.count(),
+            'total_products': Product.objects.count(),
+            'total_orders': Order.objects.count(),
+            'pending_orders': Order.objects(status='pending').count()
+        }
+        return render_template('admin/dashboard.html', stats=stats)
+    except Exception as e:
+        logger.error(f"Error loading dashboard: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash('Error loading dashboard statistics', 'danger')
+        return render_template('admin/dashboard.html', stats={
+            'total_users': 0,
+            'total_products': 0,
+            'total_orders': 0,
+            'pending_orders': 0
+        })
 
 @admin_bp.route('/users')
 @admin_session_required
 def users():
     """User management page"""
-    users_list = User.objects.all()
-    return render_template('admin/users.html', users=users_list)
+    try:
+        logger.debug("Fetching users list")
+        users_list = list(User.objects.all())  # Convert cursor to list
+        logger.debug(f"Found {len(users_list)} users")
+
+        # Log sample user data for debugging
+        if users_list:
+            sample_user = users_list[0]
+            logger.debug(f"Sample user data - ID: {sample_user.id}, Username: {sample_user.username}")
+
+        return render_template('admin/users.html', users=users_list)
+    except Exception as e:
+        logger.error(f"Error fetching users: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash('Error loading users list', 'danger')
+        return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/users/create', methods=['GET', 'POST'])
 @admin_session_required
@@ -82,6 +83,8 @@ def create_user():
             flash('User created successfully', 'success')
             return redirect(url_for('admin.users'))
         except Exception as e:
+            logger.error(f"Error creating user: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             flash(f'Error creating user: {str(e)}', 'danger')
     return render_template('admin/user_form.html')
 
@@ -89,8 +92,22 @@ def create_user():
 @admin_session_required
 def products():
     """Product management page"""
-    products_list = Product.objects.all()
-    return render_template('admin/products.html', products=products_list)
+    try:
+        logger.debug("Fetching products list")
+        products_list = list(Product.objects.all())  # Convert cursor to list
+        logger.debug(f"Found {len(products_list)} products")
+
+        # Log sample product data for debugging
+        if products_list:
+            sample_product = products_list[0]
+            logger.debug(f"Sample product data - ID: {sample_product.id}, Name: {sample_product.name}")
+
+        return render_template('admin/products.html', products=products_list)
+    except Exception as e:
+        logger.error(f"Error fetching products: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash('Error loading products list', 'danger')
+        return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/products/create', methods=['GET', 'POST'])
 @admin_session_required
@@ -116,11 +133,19 @@ def create_product():
             flash('Product created successfully', 'success')
             return redirect(url_for('admin.products'))
         except Exception as e:
+            logger.error(f"Error creating product: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             flash(f'Error creating product: {str(e)}', 'danger')
 
     # Get dynamic fields for the template
-    dynamic_fields = DynamicField.objects(entity_type='product')
-    return render_template('admin/product_form.html', dynamic_fields=dynamic_fields)
+    try:
+        dynamic_fields = list(DynamicField.objects(entity_type='product'))
+        return render_template('admin/product_form.html', dynamic_fields=dynamic_fields)
+    except Exception as e:
+        logger.error(f"Error loading dynamic fields: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash('Error loading form', 'danger')
+        return redirect(url_for('admin.products'))
 
 @admin_bp.route('/orders')
 @admin_session_required
@@ -134,11 +159,13 @@ def orders():
 def update_order_status(order_id):
     """Update order status"""
     try:
-        order = Order.objects.get(id=order_id)
+        order = Order.objects.get(id=ObjectId(order_id))
         order.status = request.form['status']
         order.save()
         flash('Order status updated successfully', 'success')
     except Exception as e:
+        logger.error(f"Error updating order status: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         flash(f'Error updating order status: {str(e)}', 'danger')
     return redirect(url_for('admin.orders'))
 
@@ -164,6 +191,8 @@ def add_dynamic_field():
         field.save()
         flash('Field added successfully', 'success')
     except Exception as e:
+        logger.error(f"Error adding dynamic field: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         flash(f'Error adding field: {str(e)}', 'danger')
     return redirect(url_for('admin.dynamic_fields'))
 
@@ -173,7 +202,7 @@ def delete_dynamic_field(field_id):
     """Delete dynamic field"""
     try:
         # Validate field exists
-        field = DynamicField.objects(id=field_id).first()
+        field = DynamicField.objects(id=ObjectId(field_id)).first()
         if not field:
             flash('Field not found', 'danger')
             return redirect(url_for('admin.dynamic_fields'))
@@ -193,6 +222,7 @@ def delete_dynamic_field(field_id):
 
     except Exception as e:
         logger.error(f"Error deleting dynamic field: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         flash(f'Error deleting field: {str(e)}', 'danger')
 
     return redirect(url_for('admin.dynamic_fields'))
@@ -202,23 +232,35 @@ def delete_dynamic_field(field_id):
 def delete_user(user_id):
     """Delete user"""
     try:
-        # Validate user exists
-        user = User.objects(id=user_id).first()
-        if not user:
-            flash('User not found', 'danger')
+        logger.debug(f"Attempting to delete user with ID: {user_id}")
+
+        try:
+            # Convert string ID to ObjectId
+            user = User.objects.get(id=ObjectId(user_id))
+            if not user:
+                logger.warning(f"User not found with ID: {user_id}")
+                flash('User not found', 'danger')
+                return redirect(url_for('admin.users'))
+        except Exception as e:
+            logger.error(f"Error finding user: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            flash('Invalid user ID', 'danger')
             return redirect(url_for('admin.users'))
 
         # Prevent deleting your own account
         if session.get('admin_username') == user.username:
+            logger.warning("Attempted to delete own admin account")
             flash('Cannot delete your own account', 'danger')
             return redirect(url_for('admin.users'))
 
         # Delete the user
         user.delete()
+        logger.info(f"Successfully deleted user with ID: {user_id}")
         flash('User deleted successfully', 'success')
 
     except Exception as e:
         logger.error(f"Error deleting user: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         flash(f'Error deleting user: {str(e)}', 'danger')
 
     return redirect(url_for('admin.users'))
@@ -228,21 +270,58 @@ def delete_user(user_id):
 def delete_product(product_id):
     """Delete product"""
     try:
-        # Log the delete attempt
         logger.debug(f"Attempting to delete product with ID: {product_id}")
 
-        # Validate product exists
-        product = Product.objects(id=product_id).first()
-        if not product:
-            flash('Product not found', 'danger')
+        try:
+            # Convert string ID to ObjectId
+            product = Product.objects.get(id=ObjectId(product_id))
+            if not product:
+                logger.warning(f"Product not found with ID: {product_id}")
+                flash('Product not found', 'danger')
+                return redirect(url_for('admin.products'))
+        except Exception as e:
+            logger.error(f"Error finding product: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            flash('Invalid product ID', 'danger')
             return redirect(url_for('admin.products'))
 
         # Delete the product
         product.delete()
+        logger.info(f"Successfully deleted product with ID: {product_id}")
         flash('Product deleted successfully', 'success')
 
     except Exception as e:
         logger.error(f"Error deleting product: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         flash(f'Error deleting product: {str(e)}', 'danger')
 
     return redirect(url_for('admin.products'))
+
+@admin_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        try:
+            user = User.objects(username=username).first()
+            if user and user.is_admin and check_password_hash(user.password, password):
+                session['admin_logged_in'] = True
+                session['admin_username'] = user.username
+                flash('Successfully logged in!', 'success')
+                return redirect(url_for('admin.dashboard'))
+            else:
+                flash('Invalid credentials or not an admin user.', 'danger')
+        except Exception as e:
+            logger.error(f"Error during login: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            flash('Error during login. Please try again.', 'danger')
+
+    return render_template('admin/login.html')
+
+@admin_bp.route('/logout')
+def logout():
+    session.pop('admin_logged_in', None)
+    session.pop('admin_username', None)
+    flash('Successfully logged out.', 'success')
+    return redirect(url_for('admin.login'))

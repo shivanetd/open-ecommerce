@@ -4,10 +4,13 @@ from flask_jwt_extended import JWTManager
 from flasgger import Swagger
 from flask_cors import CORS
 import logging
-from mongoengine import connect
+from mongoengine import connect, disconnect
+from urllib.parse import quote_plus
+import traceback
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,9 +21,29 @@ app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'super-secret')
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'another-secret-key')  # For sessions
 jwt = JWTManager(app)
 
-# Configure MongoDB
-MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/ecommerce')
-connect(host=MONGODB_URI)
+# Configure MongoDB - Close existing connections first
+disconnect()
+# Get MongoDB URI from environment and ensure password is properly encoded
+MONGODB_URI = os.environ.get('MONGODB_URI')
+if not MONGODB_URI:
+    logger.error("MONGODB_URI environment variable is not set")
+    raise ValueError("MONGODB_URI environment variable is required")
+
+try:
+    # Connect to MongoDB
+    logger.info(f"Attempting to connect to MongoDB...")
+    connect(host=MONGODB_URI)
+    logger.info("Successfully connected to MongoDB")
+
+    # Test the connection by making a simple query
+    from models import User
+    test_count = User.objects.count()
+    logger.info(f"Connection test successful. Found {test_count} users in database.")
+
+except Exception as e:
+    logger.error(f"Error connecting to MongoDB: {str(e)}")
+    logger.error(f"Traceback: {traceback.format_exc()}")
+    raise
 
 # Configure Swagger
 swagger_config = {

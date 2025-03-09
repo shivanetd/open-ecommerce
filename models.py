@@ -13,7 +13,7 @@ class User(Document):
     username = StringField(required=True, unique=True)
     password = StringField(required=True)  # Will store hashed password
     email = StringField(required=True, unique=True)
-    is_admin = BooleanField(default=False)  # New field for admin status
+    is_admin = BooleanField(default=False)
     meta = {'collection': 'users'}
 
 class Product(Document):
@@ -21,18 +21,18 @@ class Product(Document):
     description = StringField(required=True)
     price = FloatField(required=True, min_value=0)
     stock = IntField(required=True, min_value=0)
-    custom_fields = DictField(default={})  # Store dynamic fields
+    custom_fields = DictField(default={})
     meta = {'collection': 'products'}
 
 class CartItem(EmbeddedDocument):
     product = ReferenceField(Product, required=True)
     quantity = IntField(required=True, min_value=1)
-    custom_fields = DictField(default={})  # Store dynamic fields
+    custom_fields = DictField(default={})
 
 class Cart(Document):
     user = ReferenceField(User, required=True)
     items = ListField(EmbeddedDocumentField(CartItem), default=list)
-    custom_fields = DictField(default={})  # Store dynamic fields
+    custom_fields = DictField(default={})
     meta = {'collection': 'carts'}
 
 class Order(Document):
