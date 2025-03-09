@@ -1,0 +1,97 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dynamic Fields Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dynamic Fields Management</h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFieldModal">
+        Add New Field
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Field Name</th>
+                <th>Type</th>
+                <th>Entity</th>
+                <th>Description</th>
+                <th>Required</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for field in dynamic_fields %}
+            <tr>
+                <td>{{ field.name }}</td>
+                <td>{{ field.field_type }}</td>
+                <td>{{ field.entity_type }}</td>
+                <td>{{ field.description }}</td>
+                <td>
+                    {% if field.required %}
+                    <span class="badge bg-success">Required</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Optional</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="editField('{{ field.id }}')">Edit</button>
+                    <form method="POST" action="{{ url_for('admin.delete_dynamic_field', field_id=field.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Field Modal -->
+<div class="modal fade" id="addFieldModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Dynamic Field</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('admin.add_dynamic_field') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Field Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="field_type" class="form-label">Field Type</label>
+                        <select class="form-select" id="field_type" name="field_type" required>
+                            <option value="string">Text</option>
+                            <option value="number">Number</option>
+                            <option value="boolean">Yes/No</option>
+                            <option value="date">Date</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="entity_type" class="form-label">Entity Type</label>
+                        <select class="form-select" id="entity_type" name="entity_type" required>
+                            <option value="product">Product</option>
+                            <option value="cart">Cart</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="required" name="required">
+                        <label class="form-check-label" for="required">Required Field</label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Add Field</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

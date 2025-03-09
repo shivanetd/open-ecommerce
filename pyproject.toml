@@ -1,0 +1,22 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "auth>=0.5.3",
+    "cart>=1.2.3",
+    "django-mp-shop-products>=1.0",
+    "email-validator>=2.2.0",
+    "flasgger>=0.9.7.1",
+    "flask-login>=0.6.3",
+    "flask>=3.1.0",
+    "flask-cors>=5.0.1",
+    "flask-jwt-extended>=4.7.1",
+    "flask-sqlalchemy>=3.1.1",
+    "gunicorn>=23.0.0",
+    "psycopg2-binary>=2.9.10",
+    "flask-wtf>=1.2.2",
+    "werkzeug>=3.1.3",
+    "mongoengine>=0.29.1",
+]
