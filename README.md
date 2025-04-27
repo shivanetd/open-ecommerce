@@ -53,8 +53,7 @@ Pull and run the container from GitHub Container Registry:
 
 ```bash
 # Pull the image
-docker pull ghcr.io/[your-username]/[repository-name]:latest
-
+docker pull ghcr.io/shivanetd/open-ecommerce:latest
 # Run the container
 docker run -d \
   -p 5000:5000 \
