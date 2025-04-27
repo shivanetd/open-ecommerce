@@ -27,7 +27,7 @@ A comprehensive Flask-based e-commerce platform with robust admin management cap
 
 1. Clone the repository
 ```bash
-git clone [your-repository-url]
+git clone https://github.com/shivanetd/open-ecommerce.git
 ```
 
 2. Install dependencies
