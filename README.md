@@ -60,7 +60,7 @@ docker run -d \
   -e MONGODB_URI="your_mongodb_uri" \
   -e JWT_SECRET_KEY="your_jwt_secret" \
   -e FLASK_SECRET_KEY="your_flask_secret" \
-  ghcr.io/[your-username]/[repository-name]:latest
+  ghcr.io/shivanetd/open-ecommerce:latest
 ```
 
 ## API Documentation
